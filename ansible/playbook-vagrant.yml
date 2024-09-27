@@ -8,3 +8,6 @@
 
 - name: 'Run playbook-prometheus_installation.yml'
   ansible.builtin.import_playbook: playbook-prometheus_installation.yml
+
+- name: 'Run playbook-opencost_installation.yml'
+  ansible.builtin.import_playbook: playbook-opencost_installation.yml
