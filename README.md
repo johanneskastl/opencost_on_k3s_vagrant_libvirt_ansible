@@ -5,6 +5,9 @@ lightweight Kubernetes distribution.
 
 On top of k3s, this setup installs [OpenCost](https://www.opencost.io).
 
+There is also an instance of Nginx running in the default namespace, to have
+some workload.
+
 Default OS is openSUSE Leap 15.6, but that can be changed in the Vagrantfile.
 Please be aware, that this might break the Ansible provisioning.
 
