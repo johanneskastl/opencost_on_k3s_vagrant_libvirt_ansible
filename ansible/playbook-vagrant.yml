@@ -6,6 +6,9 @@
 - name: 'Run playbook-install_k3s.yml'
   ansible.builtin.import_playbook: playbook-install_k3s.yml
 
+- name: 'Run playbook-nginx.yml'
+  ansible.builtin.import_playbook: playbook-nginx.yml
+
 - name: 'Run playbook-prometheus_installation.yml'
   ansible.builtin.import_playbook: playbook-prometheus_installation.yml
 
