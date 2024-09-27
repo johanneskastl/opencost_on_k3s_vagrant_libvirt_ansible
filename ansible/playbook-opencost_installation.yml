@@ -1,0 +1,76 @@
+---
+
+- name: 'Install OpenCost'
+  hosts: 'k3s1'
+  gather_facts: true
+  become: false
+  module_defaults:
+    kubernetes.core.helm:
+      kubeconfig: './k3s-kubeconfig'
+    kubernetes.core.k8s:
+      kubeconfig: './k3s-kubeconfig'
+    kubernetes.core.k8s_info:
+      kubeconfig: './k3s-kubeconfig'
+
+  tasks:
+
+    - name: 'Create the opencost namespace'
+      delegate_to: 'localhost'
+      kubernetes.core.k8s:
+        name: 'opencost'
+        api_version: 'v1'
+        kind: 'Namespace'
+        state: 'present'
+
+    - name: 'Install opencost via the helm chart'
+      delegate_to: 'localhost'
+      kubernetes.core.helm:
+        chart_repo_url: 'https://opencost.github.io/opencost-helm-chart'
+        chart_ref: 'opencost'
+        release_name: 'opencost'
+        release_namespace: 'opencost'
+        release_values:
+          opencost:
+            ui:
+              ingress:
+                enabled: true
+                hosts:
+                  - host: "opencost.{{ hostvars['k3s1']['ansible_default_ipv4']['address'] }}.sslip.io"
+                    paths:
+                      - "/"
+            customPricing:
+              enabled: true
+              costModel:
+                description: only use CPU as indicator
+                CPU: 1.00
+                RAM: 0
+                storage: 0
+
+    - name: 'Wait until all pods are running'
+      delegate_to: 'localhost'
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: opencost
+      register: pod_list
+      until: |
+        pod_list | json_query("resources[*].status.phase") | unique | sort == ["Running"]
+        or
+        pod_list | json_query("resources[*].status.phase") | unique | sort == ["Running", "Succeeded"]
+      retries: 36
+      delay: 10
+
+    - name: 'Wait for the opencost URL to be available'
+      delegate_to: 'localhost'
+      ansible.builtin.uri:
+        url: "http://opencost.{{ hostvars['k3s1']['ansible_default_ipv4']['address'] }}.sslip.io"
+        validate_certs: false
+      register: result
+      until: "result.status == 200"
+      retries: 31
+      delay: 10
+
+    - name: 'Output opencost URL'
+      delegate_to: 'localhost'
+      ansible.builtin.debug:
+        msg: "The opencost UI is reachable at http://opencost.{{ hostvars['k3s1']['ansible_default_ipv4']['address'] }}.sslip.io"
